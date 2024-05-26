@@ -5,6 +5,7 @@ from openai import OpenAI
 import requests
 import logging
 import os
+from datetime import datetime, timedelta
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -22,6 +23,12 @@ def load_processed_news():
 def save_processed_news(processed_news):
     with open(processed_news_file, "w") as file:
         json.dump(processed_news, file)
+
+
+def clean_old_news(processed_news, days=7):
+    threshold_date = datetime.now() - timedelta(days=days)
+    threshold_timestamp = int(threshold_date.timestamp())
+    return {k: v for k, v in processed_news.items() if v > threshold_timestamp}
 
 
 def get_rss_feeds(urls):
@@ -85,7 +92,7 @@ def is_news_processed(news_id, processed_news):
 
 
 def mark_news_as_processed(news_id, processed_news):
-    processed_news[news_id] = True
+    processed_news[news_id] = int(datetime.now().timestamp())
 
 
 def summarize_news(news_entries, processed_news):
@@ -99,7 +106,7 @@ def summarize_news(news_entries, processed_news):
     client = OpenAI()
 
     for entry in news_entries:
-        news_id = entry.get("id", entry.get("link", entry.get("title")))
+        news_id = entry.get("link")
         if is_news_processed(news_id, processed_news):
             logger.info(f"News already processed: {entry.title}")
             continue
@@ -184,6 +191,9 @@ def main():
 
     # 処理済みニュースの読み込み
     processed_news = load_processed_news()
+
+    # 古いニュースを削除
+    processed_news = clean_old_news(processed_news)
 
     # ニュースのサマリを生成
     summaries = summarize_news(ai_related_entries, processed_news)
