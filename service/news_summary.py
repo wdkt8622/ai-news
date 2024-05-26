@@ -68,7 +68,7 @@ def filter_ai_news(feed_entries):
         prompt = f"""
 与えられた文章が、以下の条件に合致する場合は1、そうでない場合は0を出力せよ。結果は0か1のみを出力すること。
 # 条件
-[LLM, 生成AI, 生成系AI, 基盤モデル, 大規模言語モデル, ChatGPT, OpenAI, Gemini, Claude, RAG]のいずれかに深く関連すること。
+[LLM, 生成AI, 生成系AI, 基盤モデル, 大規模言語モデル]のいずれかに深く関連すること。
 # 文章
 {title}
 {description}
@@ -110,7 +110,7 @@ def summarize_news(news_entries, processed_news):
 - 要点は3~5つに絞って下さい。
 - 日本語で要約して下さい。
 - Formatの内容以外のことは出力しないでください。
-<Format>
+<出力Formatここから>
 ```
 {{記事全体の要約を、生成AIについての記述に注目して、簡潔に作成する}}
 ```
@@ -118,6 +118,7 @@ def summarize_news(news_entries, processed_news):
 2. *{{要点2見出し}}* ：{{要点2のまとめ}}
 ...
 n. *{{要点n見出し}}* ：{{要点nのまとめ}}
+<出力Formatここまで>
 <Content>
 {entry.title}
 {entry.get('content', '')}
