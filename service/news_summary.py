@@ -118,6 +118,7 @@ def summarize_news(news_entries, processed_news):
 2. *{{要点2見出し}}* ：{{要点2のまとめ}}
 ...
 n. *{{要点n見出し}}* ：{{要点nのまとめ}}
+ーーーーーーーー
 <Content>
 {entry.title}
 {entry.get('content', '')}
@@ -125,7 +126,9 @@ n. *{{要点n見出し}}* ：{{要点nのまとめ}}
             logger.debug(f"summary_prompt: {prompt}")
 
             completion = client.chat.completions.create(
-                model="gpt-4o", messages=[{"role": "system", "content": prompt}]
+                model="gpt-4o",
+                messages=[{"role": "system", "content": prompt}],
+                temperature=0,
             )
             summaries.append(
                 {
