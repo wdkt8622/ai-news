@@ -112,7 +112,7 @@ def summarize_news(news_entries, processed_news):
 - Formatの内容以外のことは出力しないでください。
 <Format>
 ```
-{{記事全体の要約を100字程度で出力する}}
+{{記事全体の要約を、生成AIについての記述に注目して、簡潔に作成する}}
 ```
 1. *{{要点1見出し}}* ：{{要点1のまとめ}}
 2. *{{要点2見出し}}* ：{{要点2のまとめ}}
@@ -178,12 +178,12 @@ def main():
     # 複数のRSSフィードからニュースを取得
     rss_urls = [
         "https://qiita.com/popular-items/feed",
-        # "https://gigazine.net/news/rss_2.0/",
-        # "https://b.hatena.ne.jp/entrylist/it.rss",
-        # "https://dev.classmethod.jp/feed/",
-        # "https://news.microsoft.com/ja-jp/feed/",
-        # "https://aws.amazon.com/jp/about-aws/whats-new/recent/feed/",
-        # "https://zenn.dev/feed",
+        "https://gigazine.net/news/rss_2.0/",
+        "https://b.hatena.ne.jp/entrylist/it.rss",
+        "https://dev.classmethod.jp/feed/",
+        "https://news.microsoft.com/ja-jp/feed/",
+        "https://aws.amazon.com/jp/about-aws/whats-new/recent/feed/",
+        "https://zenn.dev/feed",
     ]
     print(f"Fetching RSS feeds from {len(rss_urls)} sources.")
     feed_entries = get_rss_feeds(rss_urls, processed_news)
