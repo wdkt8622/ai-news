@@ -186,28 +186,28 @@ def main():
         # "https://aws.amazon.com/jp/about-aws/whats-new/recent/feed/",
         # "https://zenn.dev/feed",
     ]
-    logger.info(f"Fetching RSS feeds from {len(rss_urls)} sources.")
+    print(f"Fetching RSS feeds from {len(rss_urls)} sources.")
     feed_entries = get_rss_feeds(rss_urls, processed_news)
-    logger.info(f"Fetched {len(feed_entries)} new entries from RSS feeds.")
+    print(f"Fetched {len(feed_entries)} new entries from RSS feeds.")
 
     # ニュースから生成AIに関連するものを抽出
-    logger.info("Filtering AI-related news...")
+    print("Filtering AI-related news...")
     ai_related_entries = filter_ai_news(feed_entries)
-    logger.info(f"Filtered down to {len(ai_related_entries)} AI-related entries.")
+    print(f"Filtered down to {len(ai_related_entries)} AI-related entries.")
 
     # ニュースのサマリを生成
-    logger.info("Generating summaries for filtered news...")
+    print("Generating summaries for filtered news...")
     summaries = summarize_news(ai_related_entries, processed_news)
-    logger.info(f"Generated summaries for {len(summaries)} entries.")
+    print(f"Generated summaries for {len(summaries)} entries.")
 
     # 処理済みニュースの保存
     save_processed_news(processed_news)
-    logger.info("Saved processed news data.")
+    print("Saved processed news data.")
 
     # サマリをSlackに送信
-    logger.info("Sending summaries to Slack...")
+    print("Sending summaries to Slack...")
     send_to_slack(summaries, slack_webhook_url)
-    logger.info("Summaries sent to Slack.")
+    print("Summaries sent to Slack.")
 
 
 if __name__ == "__main__":
