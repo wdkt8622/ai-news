@@ -179,12 +179,12 @@ def main():
     # 複数のRSSフィードからニュースを取得
     rss_urls = [
         "https://qiita.com/popular-items/feed",
-        "https://gigazine.net/news/rss_2.0/",
-        "https://b.hatena.ne.jp/entrylist/it.rss",
-        "https://dev.classmethod.jp/feed/",
-        "https://news.microsoft.com/ja-jp/feed/",
-        "https://aws.amazon.com/jp/about-aws/whats-new/recent/feed/",
-        "https://zenn.dev/feed",
+        # "https://gigazine.net/news/rss_2.0/",
+        # "https://b.hatena.ne.jp/entrylist/it.rss",
+        # "https://dev.classmethod.jp/feed/",
+        # "https://news.microsoft.com/ja-jp/feed/",
+        # "https://aws.amazon.com/jp/about-aws/whats-new/recent/feed/",
+        # "https://zenn.dev/feed",
     ]
     print(f"Fetching RSS feeds from {len(rss_urls)} sources.")
     feed_entries = get_rss_feeds(rss_urls, processed_news)
