@@ -14,6 +14,11 @@ numpy = "^1.26.1"
 beautifulsoup4 = "^4.12.2"
 pandas = "^2.1.2"
 openpyxl = "^3.1.2"
+langchain = "^0.0.325"
+tiktoken = "^0.5.1"
+python-dotenv = "^1.0.1"
+feedparser = "^6.0.11"
+openai = "^1.30.3"
 
 
 [build-system]
