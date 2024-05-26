@@ -99,7 +99,7 @@ def summarize_news(news_entries, processed_news):
     client = OpenAI()
 
     for entry in news_entries:
-        news_id = entry.id  # Assuming each entry has a unique ID
+        news_id = entry.get("id", entry.get("link", entry.get("title")))
         if is_news_processed(news_id, processed_news):
             logger.info(f"News already processed: {entry.title}")
             continue
