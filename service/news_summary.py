@@ -31,7 +31,7 @@ def clean_old_news(processed_news, days=7):
     return {k: v for k, v in processed_news.items() if v > threshold_timestamp}
 
 
-def get_rss_feeds(urls):
+def get_rss_feeds(urls, processed_news):
     all_entries = []
     for url in urls:
         try:
@@ -39,7 +39,11 @@ def get_rss_feeds(urls):
             if feed.bozo:
                 logger.error(f"Failed to parse feed: {url}")
             else:
-                all_entries.extend(feed.entries)
+                for entry in feed.entries:
+                    link = entry.get("link")
+                    if link and link not in processed_news:
+                        all_entries.append(entry)
+                        processed_news[link] = int(datetime.now().timestamp())
         except Exception as e:
             logger.error(f"Error fetching feed {url}: {e}")
     return all_entries
@@ -64,7 +68,7 @@ def filter_ai_news(feed_entries):
         prompt = f"""
 与えられた文章が、以下の条件に合致する場合は1、そうでない場合は0を出力せよ。結果は0か1のみを出力すること。
 # 条件
-[LLM, 生成AI, 生成系AI, 基盤モデル, 大規模言語モデル, ChatGPT, OpenAI, Gemini, Claude, RAG]のいずれかに関連すること。
+[LLM, 生成AI, 生成系AI, 基盤モデル, 大規模言語モデル, ChatGPT, OpenAI, Gemini, Claude, RAG]のいずれかに深く関連すること。
 # 文章
 {title}
 {description}
@@ -87,14 +91,6 @@ result=
     return filtered_entries
 
 
-def is_news_processed(news_id, processed_news):
-    return news_id in processed_news
-
-
-def mark_news_as_processed(news_id, processed_news):
-    processed_news[news_id] = int(datetime.now().timestamp())
-
-
 def summarize_news(news_entries, processed_news):
     summaries = []
     openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -106,8 +102,8 @@ def summarize_news(news_entries, processed_news):
     client = OpenAI()
 
     for entry in news_entries:
-        news_id = entry.get("link")
-        if is_news_processed(news_id, processed_news):
+        link = entry.get("link")
+        if link in processed_news:
             logger.info(f"News already processed: {entry.title}")
             continue
         try:
@@ -132,7 +128,7 @@ n. *{{要点n見出し}}* ：{{要点nのまとめ}}
             logger.debug(f"summary_prompt: {prompt}")
 
             completion = client.chat.completions.create(
-                model="gpt-4", messages=[{"role": "system", "content": prompt}]
+                model="gpt-4o", messages=[{"role": "system", "content": prompt}]
             )
             summaries.append(
                 {
@@ -141,7 +137,7 @@ n. *{{要点n見出し}}* ：{{要点nのまとめ}}
                     "link": entry.link,
                 }
             )
-            mark_news_as_processed(news_id, processed_news)
+            processed_news[link] = int(datetime.now().timestamp())
         except Exception as e:
             logger.error(f"Error summarizing news: {e}")
     return summaries
@@ -174,35 +170,44 @@ def main():
         logger.error("Slack Webhook URL is not set.")
         return
 
-    # 複数のRSSフィードからニュースを取得
-    rss_urls = [
-        "https://qiita.com/popular-items/feed",
-        "https://gigazine.net/news/rss_2.0/",
-        "https://b.hatena.ne.jp/entrylist/it.rss",
-        "https://dev.classmethod.jp/feed/",
-        "https://news.microsoft.com/ja-jp/feed/",
-        "https://aws.amazon.com/jp/about-aws/whats-new/recent/feed/",
-        "https://zenn.dev/feed",
-    ]
-    feed_entries = get_rss_feeds(rss_urls)
-
-    # ニュースから生成AIに関連するものを抽出
-    ai_related_entries = filter_ai_news(feed_entries)
-
     # 処理済みニュースの読み込み
     processed_news = load_processed_news()
 
     # 古いニュースを削除
     processed_news = clean_old_news(processed_news)
 
+    # 複数のRSSフィードからニュースを取得
+    rss_urls = [
+        "https://qiita.com/popular-items/feed",
+        # "https://gigazine.net/news/rss_2.0/",
+        # "https://b.hatena.ne.jp/entrylist/it.rss",
+        # "https://dev.classmethod.jp/feed/",
+        # "https://news.microsoft.com/ja-jp/feed/",
+        # "https://aws.amazon.com/jp/about-aws/whats-new/recent/feed/",
+        # "https://zenn.dev/feed",
+    ]
+    logger.info(f"Fetching RSS feeds from {len(rss_urls)} sources.")
+    feed_entries = get_rss_feeds(rss_urls, processed_news)
+    logger.info(f"Fetched {len(feed_entries)} new entries from RSS feeds.")
+
+    # ニュースから生成AIに関連するものを抽出
+    logger.info("Filtering AI-related news...")
+    ai_related_entries = filter_ai_news(feed_entries)
+    logger.info(f"Filtered down to {len(ai_related_entries)} AI-related entries.")
+
     # ニュースのサマリを生成
+    logger.info("Generating summaries for filtered news...")
     summaries = summarize_news(ai_related_entries, processed_news)
+    logger.info(f"Generated summaries for {len(summaries)} entries.")
 
     # 処理済みニュースの保存
     save_processed_news(processed_news)
+    logger.info("Saved processed news data.")
 
     # サマリをSlackに送信
+    logger.info("Sending summaries to Slack...")
     send_to_slack(summaries, slack_webhook_url)
+    logger.info("Summaries sent to Slack.")
 
 
 if __name__ == "__main__":
