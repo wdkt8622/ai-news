@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-processed_news_file = "processed_news.json"
+processed_news_file = "service/processed_news.json"
 
 
 def load_processed_news():
@@ -118,7 +118,6 @@ def summarize_news(news_entries, processed_news):
 2. *{{要点2見出し}}* ：{{要点2のまとめ}}
 ...
 n. *{{要点n見出し}}* ：{{要点nのまとめ}}
-ーーーーーーーー
 <Content>
 {entry.title}
 {entry.get('content', '')}
