@@ -6,11 +6,29 @@ import requests
 import logging
 import os
 from datetime import datetime, timedelta
+from pydantic import BaseModel
+from typing import List
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 processed_news_file = "service/processed_news.json"
+
+
+class SummaryPoint(BaseModel):
+    title: str
+    description: str
+
+
+class NewsSummary(BaseModel):
+    overall_summary: str
+    key_points: List[SummaryPoint]
+    
+    
+class NotificationTemplate(BaseModel):
+    title: str
+    summary: str
+    link: str
 
 
 def load_processed_news():
@@ -80,7 +98,7 @@ result=
 
         try:
             completion = client.chat.completions.create(
-                model="gpt-3.5-turbo", messages=[{"role": "system", "content": prompt}]
+                model="gpt-4.1-mini", messages=[{"role": "system", "content": prompt}]
             )
             ai_decision = completion.choices[0].message.content.strip()
             if ai_decision == "1":
@@ -105,35 +123,41 @@ def summarize_news(news_entries, processed_news):
         link = entry.get("link")
         try:
             prompt = f"""
-以下の記事のContentをFormatに従って要約して下さい。
+以下の記事のContentを分析し、生成AIについての記述に注目して要約を作成してください。
+
 <制約条件>
-- 要点は3~5つに絞って下さい。
-- 日本語で要約して下さい。
-- Formatの内容以外のことは出力しないでください。
-<出力Formatここから>
-```
-{{記事全体の要約を、生成AIについての記述に注目して、簡潔に作成する}}
-```
-1. *{{要点1見出し}}* ：{{要点1のまとめ}}
-2. *{{要点2見出し}}* ：{{要点2のまとめ}}
-...
-n. *{{要点n見出し}}* ：{{要点nのまとめ}}
-<出力Formatここまで>
+- 要点は3~5つに絞ってください
+- 日本語で要約してください
+- 必ず指定された構造に従って出力してください
+
 <Content>
-{entry.title}
-{entry.get('content', '')}
+タイトル: {entry.title}
+内容: {entry.get('content', '')}
 """
             logger.debug(f"summary_prompt: {prompt}")
 
             completion = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[{"role": "system", "content": prompt}],
                 temperature=0,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "news_summary",
+                        "schema": NewsSummary.model_json_schema()
+                    }
+                }
             )
+            
+            summary_data = json.loads(completion.choices[0].message.content)
+            news_summary = NewsSummary(**summary_data)
+            
+            formatted_summary = format_notification(news_summary)
+            
             summaries.append(
                 {
                     "title": entry.title,
-                    "summary": completion.choices[0].message.content,
+                    "summary": formatted_summary,
                     "link": entry.link,
                 }
             )
@@ -141,6 +165,23 @@ n. *{{要点n見出し}}* ：{{要点nのまとめ}}
         except Exception as e:
             logger.error(f"Error summarizing news: {e}")
     return summaries
+
+
+def format_notification(news_summary: NewsSummary):
+    """通知文章の雛形を使用してフォーマットされた文章を生成"""
+    template = """```
+{overall_summary}
+```
+{key_points}"""
+    
+    key_points_text = ""
+    for i, point in enumerate(news_summary.key_points, 1):
+        key_points_text += f"{i}. *{point.title}* ：{point.description}\n"
+    
+    return template.format(
+        overall_summary=news_summary.overall_summary,
+        key_points=key_points_text.strip()
+    )
 
 
 def send_to_slack(summaries, webhook_url):
